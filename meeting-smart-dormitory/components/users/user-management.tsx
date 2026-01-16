@@ -204,6 +204,12 @@ export function UserManagement({ initialUsers, currentUser }: UserManagementProp
         router.refresh()
     }
 
+    // View Handler (New)
+    const [viewingUser, setViewingUser] = useState<User | null>(null)
+    const handleView = (user: User) => {
+        setViewingUser(user)
+    }
+
     return (
         <div className="space-y-4 font-athiti">
             <div className="flex justify-between items-center">
@@ -280,6 +286,95 @@ export function UserManagement({ initialUsers, currentUser }: UserManagementProp
                 )
                 }
             </div >
+
+            {/* View Details Dialog */}
+            <Dialog open={!!viewingUser} onOpenChange={(open) => !open && setViewingUser(null)}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>รายละเอียดบัญชีใช้งาน</DialogTitle>
+                        <DialogDescription>
+                            ข้อมูลรายละเอียดของผู้ใช้งานและสิทธิ์การเข้าถึง
+                        </DialogDescription>
+                    </DialogHeader>
+                    {viewingUser && (
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-slate-500 text-xs">ชื่อ-นามสกุล</Label>
+                                    <div className="font-medium">{viewingUser.name}</div>
+                                </div>
+                                <div>
+                                    <Label className="text-slate-500 text-xs">บทบาท</Label>
+                                    <div><Badge variant="secondary">{viewingUser.role}</Badge></div>
+                                </div>
+                                <div>
+                                    <Label className="text-slate-500 text-xs">Username</Label>
+                                    <div className="font-mono text-sm">{viewingUser.username}</div>
+                                </div>
+                                <div>
+                                    <Label className="text-slate-500 text-xs">สถานะ</Label>
+                                    <div className={viewingUser.isActive !== false ? "text-green-600 font-medium" : "text-red-500"}>
+                                        {viewingUser.isActive !== false ? "ใช้งานปกติ" : "ถูกระงับ"}
+                                    </div>
+                                </div>
+                                <div>
+                                    <Label className="text-slate-500 text-xs">รหัสผ่าน</Label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-mono text-lg leading-none tracking-widest">••••••••</span>
+                                        <Button
+                                            variant="link"
+                                            className="h-auto p-0 text-blue-600 text-xs"
+                                            onClick={() => {
+                                                setViewingUser(null)
+                                                handleEdit(viewingUser)
+                                            }}
+                                        >
+                                            รีเซ็ต/แก้ไข
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <Label className="text-slate-500 text-xs">Email</Label>
+                                    <div className="text-sm">{viewingUser.email || '-'}</div>
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-4 mt-2">
+                                <Label className="block mb-2 font-medium">สิทธิ์การใช้งาน (Permissions)</Label>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">จัดการผู้ใช้</span>
+                                        <span className={viewingUser.permissions?.accessUserManagement !== false ? "text-green-600" : "text-red-400"}>
+                                            {viewingUser.permissions?.accessUserManagement !== false ? "อนุญาต" : "ไม่อนุญาต"}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">จัดการหอพัก</span>
+                                        <span className={viewingUser.permissions?.accessRoomManagement !== false ? "text-green-600" : "text-red-400"}>
+                                            {viewingUser.permissions?.accessRoomManagement !== false ? "อนุญาต" : "ไม่อนุญาต"}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">การดำเนินงาน</span>
+                                        <span className={viewingUser.permissions?.accessOperations !== false ? "text-green-600" : "text-red-400"}>
+                                            {viewingUser.permissions?.accessOperations !== false ? "อนุญาต" : "ไม่อนุญาต"}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">การเงิน</span>
+                                        <span className={viewingUser.permissions?.accessFinance !== false ? "text-green-600" : "text-red-400"}>
+                                            {viewingUser.permissions?.accessFinance !== false ? "อนุญาต" : "ไม่อนุญาต"}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setViewingUser(null)}>ปิด</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <div className="rounded-md border bg-white shadow-sm">
                 <Table>
@@ -372,6 +467,12 @@ export function UserManagement({ initialUsers, currentUser }: UserManagementProp
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>การจัดการ</DropdownMenuLabel>
+                                                {isAdmin && (
+                                                    <DropdownMenuItem onClick={() => handleView(user)}>
+                                                        <Search className="mr-2 h-4 w-4" />
+                                                        ดูรายละเอียด
+                                                    </DropdownMenuItem>
+                                                )}
                                                 <DropdownMenuItem onClick={() => handleEdit(user)}>
                                                     <Pencil className="mr-2 h-4 w-4" />
                                                     แก้ไขข้อมูล
