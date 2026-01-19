@@ -17,7 +17,7 @@ class SettingController extends Controller
         // Allow if role is admin or manager using string check or relationship
         // Assuming role keys: 'admin', 'manager', 'system_admin'
         // Adjust these keys based on your actual role seeding
-        $allowedRoles = ['admin', 'manager', 'system_admin', 'super_admin'];
+        $allowedRoles = ['Admin', 'DormAdmin', 'admin', 'manager', 'system_admin', 'super_admin'];
         
         if (!in_array($user->role, $allowedRoles) && 
             (!($user->assignedRole && in_array($user->assignedRole->key, $allowedRoles)))) {

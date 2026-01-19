@@ -36,4 +36,9 @@ class Contract extends Model
     {
         return $this->belongsTo(Room::class);
     }
+
+    public function invoices(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
 }

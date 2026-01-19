@@ -185,7 +185,9 @@ export function Sidebar({ currentUser }: SidebarProps) {
                             </Link>
                         )}
 
-                        <CollapsibleSettingsMenu pathname={pathname} />
+                        {['Admin', 'DormAdmin'].includes(currentUser.role) && (
+                            <CollapsibleSettingsMenu pathname={pathname} />
+                        )}
                     </>
                 )}
 

@@ -19,10 +19,9 @@ export default async function AdminDashboard() {
     const vacantRooms = rooms.filter(r => r.status === 'ว่าง').length
     const occupiedRooms = rooms.filter(r => r.status === 'ไม่ว่าง').length
 
-    // Calculate Revenue (Sum of price for occupied rooms)
-    const totalRevenue = rooms
-        .filter(r => r.status === 'ไม่ว่าง')
-        .reduce((sum, room) => sum + room.price, 0)
+    // Calculate Revenue (From Stats)
+    const currentMonthStats = revenueStats[revenueStats.length - 1]
+    const totalRevenue = currentMonthStats ? currentMonthStats.total : 0
 
     const totalUsers = users.length
     const totalTenants = users.filter(u => u.role === 'Tenant').length
@@ -40,7 +39,7 @@ export default async function AdminDashboard() {
                     <CardContent>
                         <div className="text-2xl font-bold">฿{totalRevenue.toLocaleString()}</div>
                         <p className="text-xs text-muted-foreground">
-                            คำนวณจาก {occupiedRooms} ห้องที่มีผู้เช่า
+                            ยอดที่ชำระแล้วในเดือนนี้
                         </p>
                     </CardContent>
                 </Card>

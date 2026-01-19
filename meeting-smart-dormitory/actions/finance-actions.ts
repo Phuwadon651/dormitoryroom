@@ -245,9 +245,9 @@ export async function getRevenueStats() {
 
         const monthName = months[monthIndex];
 
-        // Filter invoices for this month/year
+        // Filter invoices for this month/year and status 'Paid'
         const monthlyRevenue = invoices
-            .filter(inv => inv.month === monthIndex + 1 && inv.year === year)
+            .filter(inv => inv.month === monthIndex + 1 && inv.year === year && inv.status === 'Paid')
             .reduce((sum, inv) => sum + inv.total_amount, 0);
 
         // Filter active contracts for this month
@@ -271,4 +271,35 @@ export async function getRevenueStats() {
     }
 
     return result;
+}
+
+export async function submitPayment(formData: FormData) {
+    const session = await getSession();
+    if (!session) return { success: false, message: 'Unauthenticated' };
+
+    try {
+        const res = await fetch(`${API_URL}/payments`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${session.token}`,
+                // Content-Type is simpler to let fetch handle boundary for FormData,
+                // BUT next.js server actions receiving FormData need to pass it carefully.
+                // We construct a new FormData or pass the body directly.
+                // However, passing FormData directly to another fetch in node environment works.
+            },
+            body: formData as any // Type casting to satisfy TS if needed
+        });
+
+        if (!res.ok) {
+            const error = await res.text();
+            console.error("Payment API Error:", error);
+            return { success: false, message: 'Failed to submit payment' };
+        }
+
+        revalidatePath('/', 'layout');
+        return { success: true };
+    } catch (e) {
+        console.error("Payment Submit Error:", e);
+        return { success: false, message: 'Connection failed' };
+    }
 }

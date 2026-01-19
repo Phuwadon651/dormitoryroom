@@ -52,7 +52,7 @@ interface UserManagementProps {
 export function UserManagement({ initialUsers, currentUser }: UserManagementProps) {
     const isAdmin = currentUser.role === 'Admin'
     const router = useRouter()
-    const [users, setUsers] = useState<User[]>(initialUsers)
+    const [users, setUsers] = useState<User[]>(initialUsers.filter(u => u.role !== 'Tenant'))
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     const [currentId, setCurrentId] = useState<string | null>(null)
@@ -63,7 +63,7 @@ export function UserManagement({ initialUsers, currentUser }: UserManagementProp
         username: "",
         password: "",
         name: "",
-        role: "Tenant",
+        role: "Manager",
         email: "",
         permissions: {
             accessOverview: true,
@@ -92,7 +92,7 @@ export function UserManagement({ initialUsers, currentUser }: UserManagementProp
             username: "",
             password: "",
             name: "",
-            role: "Tenant",
+            role: "Manager",
             email: "",
             permissions: {
                 accessOverview: true,
@@ -216,75 +216,77 @@ export function UserManagement({ initialUsers, currentUser }: UserManagementProp
                 <h2 className="text-xl font-semibold">รายชื่อผู้ใช้งานในระบบ</h2>
 
                 {isAdmin && (
-                    <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                        setIsDialogOpen(open)
-                        if (!open) resetForm()
-                    }}>
-                        <DialogTrigger asChild>
-                            <Button><Plus className="mr-2 h-4 w-4" /> เพิ่มผู้ใช้</Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                            <DialogHeader>
-                                <DialogTitle>{isEditing ? 'แก้ไขข้อมูลผู้ใช้' : 'เพิ่มผู้ใช้ใหม่'}</DialogTitle>
-                                <DialogDescription>
-                                    กำหนดบทบาทและข้อมูลพื้นฐานของผู้ใช้งาน
-                                </DialogDescription>
-                            </DialogHeader>
+                    <>
+                        <Button onClick={() => {
+                            resetForm()
+                            setIsDialogOpen(true)
+                        }}>
+                            <Plus className="mr-2 h-4 w-4" /> เพิ่มผู้ใช้
+                        </Button>
 
-                            <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-                                {error && (
-                                    <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-200">
-                                        {error}
+                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                    <DialogTitle>{isEditing ? 'แก้ไขข้อมูลผู้ใช้' : 'เพิ่มผู้ใช้ใหม่'}</DialogTitle>
+                                    <DialogDescription>
+                                        กำหนดบทบาทและข้อมูลพื้นฐานของผู้ใช้งาน
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+                                    {error && (
+                                        <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-200">
+                                            {error}
+                                        </div>
+                                    )}
+                                    <div className="grid gap-6 py-4">
+                                        {/* Main Info Section */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="name">ชื่อ-นามสกุล</Label>
+                                                <Input id="name" name="name" value={formData.name} onChange={handleInputChange} placeholder="สมชาย ใจดี" required />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="role">บทบาท</Label>
+                                                <Select value={formData.role} onValueChange={(val) => handleSelectChange('role', val)}>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="เลือกบทบาท" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Admin">ผู้ดูแลระบบ (Admin)</SelectItem>
+                                                        <SelectItem value="DormAdmin">ผู้ดูแลหอพัก (Dorm Admin)</SelectItem>
+                                                        <SelectItem value="Manager">ผู้จัดการ (Manager)</SelectItem>
+                                                        <SelectItem value="Technician">ช่างซ่อม (Technician)</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="username">Username</Label>
+                                                <Input id="username" name="username" value={formData.username} onChange={handleInputChange} placeholder="username" required />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="password">Password</Label>
+                                                <Input id="password" name="password" value={formData.password} onChange={handleInputChange} placeholder="••••••••" required />
+                                            </div>
+
+                                            <div className="space-y-2 col-span-2">
+                                                <Label htmlFor="email">Email</Label>
+                                                <Input id="email" type="email" name="email" value={formData.email || ''} onChange={handleInputChange} placeholder="email@example.com" />
+                                            </div>
+                                        </div>
+
                                     </div>
-                                )}
-                                <div className="grid gap-6 py-4">
-                                    {/* Main Info Section */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="name">ชื่อ-นามสกุล</Label>
-                                            <Input id="name" name="name" value={formData.name} onChange={handleInputChange} placeholder="สมชาย ใจดี" required />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="role">บทบาท</Label>
-                                            <Select value={formData.role} onValueChange={(val) => handleSelectChange('role', val)}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="เลือกบทบาท" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Admin">ผู้ดูแลระบบ (Admin)</SelectItem>
-                                                    <SelectItem value="DormAdmin">ผู้ดูแลหอพัก (Dorm Admin)</SelectItem>
-                                                    <SelectItem value="Manager">ผู้จัดการ (Manager)</SelectItem>
-                                                    <SelectItem value="Tenant">ผู้เช่า (Tenant)</SelectItem>
-                                                    <SelectItem value="Technician">ช่างซ่อม (Technician)</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
 
-                                        <div className="space-y-2">
-                                            <Label htmlFor="username">Username</Label>
-                                            <Input id="username" name="username" value={formData.username} onChange={handleInputChange} placeholder="username" required />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="password">Password</Label>
-                                            <Input id="password" name="password" value={formData.password} onChange={handleInputChange} placeholder="••••••••" required />
-                                        </div>
-
-                                        <div className="space-y-2 col-span-2">
-                                            <Label htmlFor="email">Email</Label>
-                                            <Input id="email" type="email" name="email" value={formData.email || ''} onChange={handleInputChange} placeholder="email@example.com" />
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                                <DialogFooter>
-                                    <Button type="submit">บันทึก</Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
-                )
-                }
+                                    <DialogFooter className="gap-2 sm:gap-0">
+                                        <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>ยกเลิก</Button>
+                                        <Button type="submit">บันทึก</Button>
+                                    </DialogFooter>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </>
+                )}
             </div >
 
             {/* View Details Dialog */}

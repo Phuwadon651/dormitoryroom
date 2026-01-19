@@ -18,6 +18,8 @@ class Tenant extends Model
         'email',
         'line_id',
         'move_in_date',
+        'user_id',
+        'plain_password',
     ];
 
     protected $casts = [
@@ -32,5 +34,9 @@ class Tenant extends Model
     public function contracts(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Contract::class);
+    }
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

@@ -9,4 +9,7 @@ export interface Tenant {
     status: 'Active' | 'MovingOut' | 'Pending'
     email: string
     moveInDate: string
+    username?: string
+    password?: string
+    plain_password?: string
 }

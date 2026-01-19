@@ -96,7 +96,7 @@ class FinanceController extends Controller
     // --- Payments ---
     public function getPayments()
     {
-        return Payment::with('invoice')->get();
+        return Payment::with('invoice.contract.tenant')->get();
     }
 
     public function createPayment(Request $request)
@@ -105,14 +105,35 @@ class FinanceController extends Controller
             'invoice_id' => 'required|exists:invoices,id',
             'amount' => 'required|numeric',
             'payment_date' => 'required|date',
-            'slip_image' => 'nullable|string', 
+            'slip_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', 
         ]);
 
-        $payment = Payment::create(array_merge($validated, ['status' => 'Pending']));
+        $slipPath = null;
+        if ($request->hasFile('slip_image')) {
+            $file = $request->file('slip_image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            // Store in 'public/slips'
+            $file->move(public_path('uploads/slips'), $filename);
+            $slipPath = '/uploads/slips/' . $filename;
+        }
+
+        $payment = Payment::create([
+            'invoice_id' => $validated['invoice_id'],
+            'amount' => $validated['amount'],
+            'payment_date' => $validated['payment_date'],
+            'slip_image' => $slipPath,
+            'status' => 'Pending'
+        ]);
+
+        // Update Invoice Status to Pending
+        $invoice = Invoice::find($validated['invoice_id']);
+        if ($invoice) {
+            $invoice->update(['status' => 'Pending']);
+        }
 
         Activity::create([
             'title' => 'ชำระเงินใหม่',
-            'description' => "จำนวน {$validated['amount']} บาท",
+            'description' => "จำนวน {$validated['amount']} บาท (รอตรวจสอบ)",
             'type' => 'info'
         ]);
 
@@ -129,8 +150,14 @@ class FinanceController extends Controller
             'approved_by' => $request->user()->id,
         ]);
 
+        $invoice = $payment->invoice;
+
         if ($status === 'Paid') {
-            $payment->invoice->update(['status' => 'Paid']);
+            $invoice->update(['status' => 'Paid']);
+        } else if ($status === 'Rejected') {
+             // If rejected, invoice goes back to Pending or Unpaid? 
+             // Usually stays Pending until new slip, OR goes back to Unpaid/Overdue
+             $invoice->update(['status' => 'Overdue']); // Or back to original state
         }
 
         Activity::create([
@@ -145,5 +172,21 @@ class FinanceController extends Controller
     // --- Activities ---
     public function getActivities() {
         return Activity::latest()->take(20)->get();
+    }
+    
+    // --- Stats ---
+    public function getStats() {
+         // Moved from frontend/actions to here for better performance
+         $invoices = Invoice::all();
+         $contracts = Contract::all();
+         
+         // Implementation of stats logic if needed, or keep relying on frontend aggregation
+         // For now, let's just return basic counts
+         return [
+             'total_tenants' => \App\Models\Tenant::count(),
+             'total_rooms' => \App\Models\Room::count(),
+             'vacant_rooms' => \App\Models\Room::where('status', 'Vacant')->count(),
+             'pending_invoices' => Invoice::where('status', 'Pending')->count(),
+         ];
     }
 }

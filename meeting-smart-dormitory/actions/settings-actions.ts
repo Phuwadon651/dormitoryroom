@@ -6,7 +6,18 @@ import { cookies } from "next/headers"
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
 
 async function getHeaders() {
-    const token = (await cookies()).get('token')?.value
+    const session = (await cookies()).get('session')
+    let token = ''
+
+    if (session) {
+        try {
+            const sessionData = JSON.parse(session.value)
+            token = sessionData.token
+        } catch (e) {
+            console.error('Failed to parse session cookie', e)
+        }
+    }
+
     return {
         'Content-Type': 'application/json',
         'Accept': 'application/json',

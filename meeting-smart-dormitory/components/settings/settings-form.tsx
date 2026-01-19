@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
-import { Textarea } from "@/components/ui/textarea"
 
 interface SettingsFormProps {
     initialSettings: Record<string, any>
@@ -102,13 +101,63 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="address">ที่อยู่</Label>
-                            <Textarea
-                                id="address"
-                                value={settings.address || ''}
-                                onChange={(e) => handleChange('address', e.target.value)}
-                                placeholder="เลขที่..., ถนน..., ตำบล..., อำเภอ..., จังหวัด..."
-                            />
+                            <Label>ที่อยู่</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-slate-50/50">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="dorm_addr_no" className="text-xs text-muted-foreground">เลขที่ / หมู่บ้าน</Label>
+                                    <Input
+                                        id="dorm_addr_no"
+                                        value={settings.dorm_addr_no || ''}
+                                        onChange={(e) => handleChange('dorm_addr_no', e.target.value)}
+                                        placeholder="เช่น 123/4 หมู่ 5"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="dorm_addr_street" className="text-xs text-muted-foreground">ถนน / ซอย</Label>
+                                    <Input
+                                        id="dorm_addr_street"
+                                        value={settings.dorm_addr_street || ''}
+                                        onChange={(e) => handleChange('dorm_addr_street', e.target.value)}
+                                        placeholder="เช่น ถ.พหลโยธิน"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="dorm_addr_subdistrict" className="text-xs text-muted-foreground">ตำบล / แขวง</Label>
+                                    <Input
+                                        id="dorm_addr_subdistrict"
+                                        value={settings.dorm_addr_subdistrict || ''}
+                                        onChange={(e) => handleChange('dorm_addr_subdistrict', e.target.value)}
+                                        placeholder="เช่น ต.คลองหนึ่ง"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="dorm_addr_district" className="text-xs text-muted-foreground">อำเภอ / เขต</Label>
+                                    <Input
+                                        id="dorm_addr_district"
+                                        value={settings.dorm_addr_district || ''}
+                                        onChange={(e) => handleChange('dorm_addr_district', e.target.value)}
+                                        placeholder="เช่น อ.คลองหลวง"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="dorm_addr_province" className="text-xs text-muted-foreground">จังหวัด</Label>
+                                    <Input
+                                        id="dorm_addr_province"
+                                        value={settings.dorm_addr_province || ''}
+                                        onChange={(e) => handleChange('dorm_addr_province', e.target.value)}
+                                        placeholder="เช่น ปทุมธานี"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="dorm_addr_zip" className="text-xs text-muted-foreground">รหัสไปรษณีย์</Label>
+                                    <Input
+                                        id="dorm_addr_zip"
+                                        value={settings.dorm_addr_zip || ''}
+                                        onChange={(e) => handleChange('dorm_addr_zip', e.target.value)}
+                                        placeholder="เช่น 12120"
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
@@ -342,6 +391,19 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
                             />
                             <p className="text-sm text-gray-500">
                                 คุณสามารถออก Token ได้ที่ <a href="https://notify-bot.line.me/my/" target="_blank" className="text-blue-500 underline">line.me</a>
+                            </p>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="email_notification">อีเมลแจ้งเตือน (Email Notification)</Label>
+                            <Input
+                                id="email_notification"
+                                type="email"
+                                value={settings.email_notification || ''}
+                                onChange={(e) => handleChange('email_notification', e.target.value)}
+                                placeholder="example@domain.com"
+                            />
+                            <p className="text-sm text-gray-500">
+                                ระบุอีเมลที่ต้องการรับการแจ้งเตือนต่างๆ
                             </p>
                         </div>
                     </CardContent>

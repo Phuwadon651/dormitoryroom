@@ -20,7 +20,13 @@ export default async function FinancePage() {
     const payments = await getPayments()
 
     // Key Stats
-    const totalRevenue = invoices.filter(i => i.status === 'Paid').reduce((sum, i) => sum + i.total_amount, 0)
+    const currentMonth = new Date().getMonth() + 1
+    const currentYear = new Date().getFullYear()
+
+    // Total Revenue (This Month ONLY)
+    const totalRevenue = invoices
+        .filter(i => i.status === 'Paid' && i.month === currentMonth && i.year === currentYear)
+        .reduce((sum, i) => sum + i.total_amount, 0)
     const pendingAmount = invoices.filter(i => i.status === 'Pending').reduce((sum, i) => sum + i.total_amount, 0)
     const activeContracts = contracts.filter(c => c.isActive).length
 

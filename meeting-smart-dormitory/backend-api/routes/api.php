@@ -14,6 +14,11 @@ Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 
 
+
+
+
+
+
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
@@ -36,6 +41,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('rooms', RoomController::class);
 
     // Tenants
+    Route::get('/tenants/me', [TenantController::class, 'me']);
     Route::apiResource('tenants', TenantController::class);
 
     // Finance
@@ -58,4 +64,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Settings
     Route::get('/settings', [\App\Http\Controllers\SettingController::class, 'index']);
     Route::post('/settings', [\App\Http\Controllers\SettingController::class, 'update']);
+
 });

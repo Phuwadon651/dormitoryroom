@@ -25,7 +25,9 @@ function mapToFrontend(apiTenant: any): Tenant {
         status: apiTenant.status,
         email: apiTenant.email,
         moveInDate: apiTenant.move_in_date,
-        avatar: ''
+        avatar: '',
+        username: apiTenant.user ? apiTenant.user.username : '',
+        plain_password: apiTenant.plain_password || ''
     };
 }
 
@@ -79,7 +81,9 @@ export async function createTenant(data: Omit<Tenant, 'id'>): Promise<{ success:
         room_id: roomId,
         status: data.status,
         move_in_date: data.moveInDate,
-        line_id: ''
+        line_id: '',
+        username: data.username,
+        password: data.password
     };
 
     try {
@@ -106,7 +110,7 @@ export async function createTenant(data: Omit<Tenant, 'id'>): Promise<{ success:
         revalidatePath('/', 'layout');
         return {
             success: true,
-            data: mapToFrontend({ ...newItem, room: { room_number: data.room, floor: roomFloor } })
+            data: mapToFrontend(newItem)
         };
 
     } catch (e) {
@@ -115,28 +119,46 @@ export async function createTenant(data: Omit<Tenant, 'id'>): Promise<{ success:
     }
 }
 
-export async function updateTenant(id: string, data: Partial<Tenant>): Promise<Tenant | null> {
+export async function updateTenant(id: string, data: Partial<Tenant>): Promise<{ success: boolean; data?: Tenant; error?: string }> {
     const headers = await getAuthHeaders();
 
     const payload: any = { ...data };
     if (data.moveInDate) payload.move_in_date = data.moveInDate;
+
+    // Look up Room ID if room is provided
     if (data.room) {
-        // Same logic for room_id lookup... 
-        // For simplicity, skipping optimized lookup.
-        // In real app, we should fix the form to work with IDs.
+        try {
+            const roomRes = await fetch(`${API_URL}/rooms`, { headers });
+            if (roomRes.ok) {
+                const rooms = await roomRes.json();
+                const found = rooms.find((r: any) => String(r.room_number) === String(data.room));
+                if (found) {
+                    payload.room_id = found.id;
+                }
+            }
+        } catch (e) {
+            console.error("Room lookup failed", e);
+        }
     }
 
-    const res = await fetch(`${API_URL}/tenants/${id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(payload)
-    });
+    try {
+        const res = await fetch(`${API_URL}/tenants/${id}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(payload)
+        });
 
-    if (res.ok) {
-        revalidatePath('/', 'layout');
-        return mapToFrontend(await res.json());
+        if (res.ok) {
+            revalidatePath('/', 'layout');
+            return { success: true, data: mapToFrontend(await res.json()) };
+        }
+
+        const text = await res.text();
+        return { success: false, error: `Update failed: ${text}` };
+
+    } catch (e) {
+        return { success: false, error: 'Connection error' };
     }
-    return null;
 }
 
 export async function deleteTenant(id: string): Promise<boolean> {
@@ -148,4 +170,19 @@ export async function deleteTenant(id: string): Promise<boolean> {
 
     revalidatePath('/', 'layout');
     return res.ok;
+}
+
+export async function getTenantProfile() {
+    const headers = await getAuthHeaders();
+    try {
+        const res = await fetch(`${API_URL}/tenants/me`, {
+            headers,
+            cache: 'no-store'
+        });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (e) {
+        console.error('Get Tenant Profile Error:', e);
+        return null;
+    }
 }
