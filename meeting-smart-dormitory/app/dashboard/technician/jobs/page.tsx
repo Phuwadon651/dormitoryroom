@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Wrench, LogOut } from "lucide-react"
-import { LogoutButton } from "@/components/auth/logout-button"
+import { Wrench } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function TechnicianJobsPage() {
@@ -8,17 +7,9 @@ export default function TechnicianJobsPage() {
         <div className="min-h-screen bg-slate-50/50 p-6 md:p-10">
             <div className="max-w-5xl mx-auto space-y-8">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border">
-                    <div>
-                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">งานซ่อมที่ได้รับมอบหมาย</h2>
-                        <p className="text-muted-foreground mt-1">จัดการรายการแจ้งซ่อมและสถานะการดำเนินงาน</p>
-                    </div>
-                    <LogoutButton className="w-full md:w-auto">
-                        <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 py-2 w-full md:w-auto">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            ออกจากระบบ
-                        </div>
-                    </LogoutButton>
+                <div>
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">งานซ่อมที่ได้รับมอบหมาย</h2>
+                    <p className="text-muted-foreground mt-1">จัดการรายการแจ้งซ่อมและสถานะการดำเนินงาน</p>
                 </div>
 
                 {/* Stats Section */}

@@ -2,16 +2,14 @@ import { Suspense } from "react"
 import { getContracts, getInvoices, getPayments } from "@/actions/finance-actions"
 import { getCurrentUser } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { ContractList } from "@/components/finance/contract-list"
-import { InvoiceList } from "@/components/finance/invoice-list"
-import { PaymentList } from "@/components/finance/payment-list"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, FileText, CreditCard } from "lucide-react"
+import { FinanceView } from "@/components/finance/finance-view"
 
 export default async function FinancePage() {
     const currentUser = await getCurrentUser()
-    if (!['Admin', 'DormAdmin', 'Manager'].includes(currentUser.role)) {
+    const allowedRoles = ['Admin', 'DormAdmin', 'Manager']
+    if (!allowedRoles.includes(currentUser.role)) {
         redirect('/dashboard')
     }
 
@@ -68,26 +66,13 @@ export default async function FinancePage() {
                 </Card>
             </div>
 
-            {/* Tabs */}
-            <Tabs defaultValue="invoices" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="contracts">สัญญาเช่า (Contracts)</TabsTrigger>
-                    <TabsTrigger value="invoices">ใบแจ้งหนี้ (Invoices)</TabsTrigger>
-                    <TabsTrigger value="payments">ตรวจสอบการชำระ (Transactions)</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="contracts" className="space-y-4">
-                    <ContractList initialContracts={contracts} />
-                </TabsContent>
-
-                <TabsContent value="invoices" className="space-y-4">
-                    <InvoiceList initialInvoices={invoices} contracts={contracts} />
-                </TabsContent>
-
-                <TabsContent value="payments" className="space-y-4">
-                    <PaymentList initialPayments={payments} />
-                </TabsContent>
-            </Tabs>
+            {/* Client Component for View Management */}
+            <FinanceView
+                contracts={contracts}
+                invoices={invoices}
+                payments={payments}
+                currentUser={currentUser}
+            />
         </div>
     )
 }

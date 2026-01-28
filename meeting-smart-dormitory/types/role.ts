@@ -14,10 +14,13 @@ export interface Role {
 export interface Permissions {
     accessOverview: boolean;
     accessUserManagement: boolean;
-    accessRoomManagement: boolean;
+    accessRoomManagement: boolean; // Rooms Plan
+    accessTenants: boolean;        // Tenant Info
+    accessUtilities: boolean;      // Meter Reading
     accessOperations: boolean;
     accessRepair: boolean;
     accessFinance: boolean;
+    accessSettings: boolean;       // Settings
     [key: string]: boolean;
 }
 

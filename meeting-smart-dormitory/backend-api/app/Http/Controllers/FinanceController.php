@@ -189,4 +189,18 @@ class FinanceController extends Controller
              'pending_invoices' => Invoice::where('status', 'Pending')->count(),
          ];
     }
+
+    public function destroyInvoice($id)
+    {
+        $invoice = Invoice::findOrFail($id);
+        $invoice->delete();
+        
+        Activity::create([
+            'title' => 'ลบใบแจ้งหนี้',
+            'description' => "ลบใบแจ้งหนี้รอบ {$invoice->period_month}/{$invoice->period_year}",
+            'type' => 'warning'
+        ]);
+
+        return response()->json(['message' => 'Invoice deleted successfully']);
+    }
 }

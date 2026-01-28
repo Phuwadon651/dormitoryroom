@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getTenantProfile } from "@/actions/tenant-actions"
+import { getSettings } from "@/actions/setting-actions"
 
 // Utility to format date
 const formatDate = (dateStr: string) => {
@@ -34,19 +35,28 @@ export function TenantDashboard() {
     const [loading, setLoading] = useState(true)
     const [profile, setProfile] = useState<any>(null)
     const [invoices, setInvoices] = useState<any[]>([])
+    const [settings, setSettings] = useState<any>(null)
     // const [maintenances, setMaintenances] = useState<any[]>([]) // Pending implementation in response
 
     useEffect(() => {
         async function load() {
             try {
-                const data = await getTenantProfile();
-                if (data && data.profile) {
-                    setProfile(data.profile);
+                const [profileData, settingsData] = await Promise.all([
+                    getTenantProfile(),
+                    getSettings()
+                ])
+
+                if (settingsData) {
+                    setSettings(settingsData)
+                }
+
+                if (profileData && profileData.profile) {
+                    setProfile(profileData.profile);
                     // Extract invoices from contracts
                     // Structure: profile.contracts[].invoices[]
                     let allInvoices: any[] = [];
-                    if (data.profile.contracts) {
-                        data.profile.contracts.forEach((c: any) => {
+                    if (profileData.profile.contracts) {
+                        profileData.profile.contracts.forEach((c: any) => {
                             if (c.invoices) allInvoices.push(...c.invoices);
                         });
                     }
@@ -55,7 +65,7 @@ export function TenantDashboard() {
                     setInvoices(allInvoices);
                 }
             } catch (e) {
-                console.error("Failed to load profile", e)
+                console.error("Failed to load data", e)
             } finally {
                 setLoading(false);
             }
@@ -201,18 +211,31 @@ export function TenantDashboard() {
                                                 สแกนผ่านแอปธนาคารเพื่อชำระยอด {Number(pendingBill.total_amount).toLocaleString()} บาท
                                             </DialogDescription>
                                         </DialogHeader>
-                                        <div className="flex items-center justify-center py-6">
+                                        <div className="flex flex-col items-center justify-center py-6 gap-4">
                                             {/* Valid QR Code Image Placeholder */}
                                             <div className="bg-white p-4 rounded-xl border shadow-sm">
-                                                <img
-                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020101021129370016A000000677010111011300668812345675802TH5303764540${Number(pendingBill.total_amount).toFixed(2)}6304`}
-                                                    alt="PromptPay QR"
-                                                    className="w-48 h-48"
-                                                />
+                                                {settings?.finance?.promptpay_qr_image || settings?.general?.promptpay_qr_image ? (
+                                                    <img
+                                                        src={settings?.finance?.promptpay_qr_image || settings?.general?.promptpay_qr_image}
+                                                        alt="PromptPay QR"
+                                                        className="w-48 h-48 object-contain"
+                                                    />
+                                                ) : (
+                                                    <img
+                                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020101021129370016A000000677010111011300668812345675802TH5303764540${Number(pendingBill.total_amount).toFixed(2)}6304`}
+                                                        alt="PromptPay QR"
+                                                        className="w-48 h-48"
+                                                    />
+                                                )}
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="font-bold text-slate-800">PromptPay</p>
+                                                <p className="text-sm text-slate-600">{settings?.finance?.promptpay_number || settings?.general?.promptpay_number || '-'}</p>
+                                                <p className="text-xs text-muted-foreground">{settings?.finance?.promptpay_name || settings?.general?.promptpay_name || ''}</p>
                                             </div>
                                         </div>
                                         <DialogFooter className="sm:justify-center">
-                                            <span className="text-sm text-muted-foreground">ธนาคารกสิกรไทย: x-xxxx-xxxx-x</span>
+                                            {/* Footer content if needed */}
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>

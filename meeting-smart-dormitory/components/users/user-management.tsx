@@ -206,6 +206,49 @@ export function UserManagement({ initialUsers, currentUser }: UserManagementProp
 
     // View Handler (New)
     const [viewingUser, setViewingUser] = useState<User | null>(null)
+    const [pendingPermissionChange, setPendingPermissionChange] = useState<{ userId: string, permKey: string, newValue: boolean } | null>(null)
+
+    const handleConfirmPermissionChange = async () => {
+        if (!pendingPermissionChange) return
+
+        const { userId, permKey, newValue } = pendingPermissionChange
+        const user = users.find(u => u.id === userId)
+        if (!user) return
+
+        const newPermissions = {
+            ...user.permissions,
+            [permKey]: newValue
+        }
+
+        const result = await updateUser(userId, { permissions: newPermissions })
+
+        if (result.success) {
+            setUsers(users.map(u => u.id === userId ? { ...u, permissions: newPermissions } : u))
+            router.refresh()
+
+            // Custom Toast
+            toast.custom((t) => (
+                <div className="bg-white border-2 border-green-500 rounded-xl p-4 shadow-lg flex items-center gap-3 min-w-[300px]">
+                    <div className="bg-green-100 p-2 rounded-full">
+                        <ShieldCheck className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-900">แก้ไขเสร็จสิ้น</h3>
+                        <p className="text-sm text-slate-600">สิทธิ์การใช้งานถูกบันทึกเรียบร้อยแล้ว</p>
+                    </div>
+                    <button onClick={() => toast.dismiss(t)} className="ml-auto text-slate-400 hover:text-slate-600">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            ), { duration: 3000 })
+
+        } else {
+            toast.error("บันทึกไม่สำเร็จ: " + result.error)
+        }
+
+        setPendingPermissionChange(null)
+    }
+
     const handleView = (user: User) => {
         setViewingUser(user)
     }
@@ -384,19 +427,21 @@ export function UserManagement({ initialUsers, currentUser }: UserManagementProp
                         <TableRow>
                             <TableHead className="w-[200px] bg-slate-50 text-slate-700">ผู้ใช้งาน</TableHead>
                             <TableHead className="bg-slate-50 text-slate-700">บทบาท</TableHead>
-                            <TableHead className="text-center bg-slate-50 text-slate-700">ภาพรวม</TableHead>
                             <TableHead className="text-center bg-slate-50 text-slate-700">จัดการผู้ใช้งาน</TableHead>
+                            <TableHead className="text-center bg-slate-50 text-slate-700">ภาพรวม</TableHead>
                             <TableHead className="text-center bg-slate-50 text-slate-700">ผังห้องพัก</TableHead>
-                            <TableHead className="text-center bg-slate-50 text-slate-700">การดำเนินงาน</TableHead>
-                            <TableHead className="text-center bg-slate-50 text-slate-700">แจ้งซ่อม</TableHead>
+                            <TableHead className="text-center bg-slate-50 text-slate-700">ข้อมูลผู้เช่า</TableHead>
+                            <TableHead className="text-center bg-slate-50 text-slate-700">จดมิเตอร์น้ำ/ไฟ</TableHead>
                             <TableHead className="text-center bg-slate-50 text-slate-700">การเงิน</TableHead>
+                            <TableHead className="text-center bg-slate-50 text-slate-700">แจ้งซ่อม</TableHead>
+                            <TableHead className="text-center bg-slate-50 text-slate-700">ตั้งค่า</TableHead>
                             <TableHead className="text-right bg-slate-50 text-slate-700">จัดการ</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {users.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={9} className="text-center h-24 text-muted-foreground">ไม่มีข้อมูลผู้ใช้</TableCell>
+                                <TableCell colSpan={11} className="text-center h-24 text-muted-foreground">ไม่มีข้อมูลผู้ใช้</TableCell>
                             </TableRow>
                         ) : (
                             users.map((user) => (
@@ -420,12 +465,14 @@ export function UserManagement({ initialUsers, currentUser }: UserManagementProp
 
                                     {/* Permission Columns */}
                                     {[
-                                        'accessOverview',
                                         'accessUserManagement',
+                                        'accessOverview',
                                         'accessRoomManagement',
-                                        'accessOperations',
+                                        'accessTenants',
+                                        'accessUtilities',
+                                        'accessFinance',
                                         'accessRepair',
-                                        'accessFinance'
+                                        'accessSettings'
                                     ].map((permKey) => (
                                         <TableCell key={permKey} className="text-center p-2">
                                             {isAdmin ? (
@@ -435,18 +482,12 @@ export function UserManagement({ initialUsers, currentUser }: UserManagementProp
                                                     </span>
                                                     <Switch
                                                         checked={user.permissions?.[permKey as keyof typeof user.permissions] !== false}
-                                                        onCheckedChange={async (checked) => {
-                                                            const newPermissions = {
-                                                                ...user.permissions,
-                                                                [permKey]: checked
-                                                            }
-                                                            // Optimistic Update
-                                                            setUsers(users.map(u => u.id === user.id ? { ...u, permissions: newPermissions } : u))
-                                                            const result = await updateUser(user.id, { permissions: newPermissions })
-                                                            if (!result.success) {
-                                                                toast.error("บันทึกสิทธิ์ไม่สำเร็จ: " + result.error)
-                                                                router.refresh() // Revert
-                                                            }
+                                                        onCheckedChange={(checked) => {
+                                                            setPendingPermissionChange({
+                                                                userId: user.id,
+                                                                permKey,
+                                                                newValue: checked
+                                                            })
                                                         }}
                                                         className="data-[state=checked]:bg-slate-800"
                                                     />
@@ -497,6 +538,22 @@ export function UserManagement({ initialUsers, currentUser }: UserManagementProp
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Confirmation Dialog for Permission Change */}
+            <Dialog open={!!pendingPermissionChange} onOpenChange={(open) => !open && setPendingPermissionChange(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>ยืนยันการเปลี่ยนสิทธิ์การใช้งาน</DialogTitle>
+                        <DialogDescription>
+                            คุณต้องการบันทึกการเปลี่ยนแปลงสิทธิ์นี้ใช่หรือไม่?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setPendingPermissionChange(null)}>ยกเลิก</Button>
+                        <Button onClick={handleConfirmPermissionChange} className="bg-slate-900 hover:bg-slate-800">ยืนยันการเปลี่ยนแปลง</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div >
     )
 }

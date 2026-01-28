@@ -93,17 +93,19 @@ export async function getContracts(): Promise<Contract[]> {
     }
 }
 
-export async function createContract(data: Omit<Contract, 'id' | 'isActive'>) {
+export async function createContract(data: any) {
     const headers = await getAuthHeaders();
 
-    // Reverse map? Or just send what API expects
     // API expects: tenant_id, room_id, start_date, rent_price, deposit
     const payload = {
         tenant_id: data.tenant_id,
         room_id: data.room_id,
         start_date: data.start_date,
+        end_date: data.end_date,
         rent_price: data.rent_price,
-        deposit: data.deposit_amount
+        deposit: data.deposit_amount,
+        initial_water_meter: data.initial_water_meter,
+        initial_electric_meter: data.initial_electric_meter
     };
 
     const res = await fetch(`${API_URL}/contracts`, {
@@ -167,6 +169,20 @@ export async function createInvoice(data: Omit<Invoice, 'id' | 'total_amount' | 
 
 export async function updateInvoiceStatus(id: string, status: PaymentStatus) {
     // No op or implement if needed
+}
+
+export async function deleteInvoice(id: string) {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_URL}/invoices/${id}`, {
+        method: 'DELETE',
+        headers
+    });
+
+    if (res.ok) {
+        revalidatePath('/', 'layout');
+        return { success: true };
+    }
+    return { success: false, error: 'Failed to delete' };
 }
 
 // --- Payments ---

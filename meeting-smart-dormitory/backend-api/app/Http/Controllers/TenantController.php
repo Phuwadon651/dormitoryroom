@@ -50,7 +50,7 @@ class TenantController extends Controller
             $tenant = Tenant::create($tenantData);
             
             // Create Contract if room is assigned
-            if ($tenant->room_id) {
+            if ($tenant->room_id && !$request->boolean('skip_contract')) {
                 $room = \App\Models\Room::find($tenant->room_id);
                 \App\Models\Contract::create([
                     'tenant_id' => $tenant->id,

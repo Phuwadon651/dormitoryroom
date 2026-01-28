@@ -57,8 +57,8 @@ export function OverviewChart({ data }: OverviewChartProps) {
                                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                                 }}
                                 formatter={(value: any, name: any) => {
-                                    if (name === "total") return [`฿${value.toLocaleString()}`, "รายได้"]
-                                    if (name === "occupants") return [`${value} คน`, "ผู้เช่า"]
+                                    if (name === "รายได้" || name === "total") return [`฿${value.toLocaleString()}`, "รายได้"]
+                                    if (name === "ผู้เช่า" || name === "occupants") return [`${value} คน`, "ผู้เช่า"]
                                     return [value, name]
                                 }}
                             />
@@ -71,7 +71,7 @@ export function OverviewChart({ data }: OverviewChartProps) {
                                 strokeWidth={3}
                                 dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
                                 activeDot={{ r: 6, strokeWidth: 2 }}
-                                name="total"
+                                name="รายได้"
                             />
                             <Line
                                 yAxisId="right"
@@ -81,7 +81,7 @@ export function OverviewChart({ data }: OverviewChartProps) {
                                 strokeWidth={3}
                                 dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
                                 activeDot={{ r: 6, strokeWidth: 2 }}
-                                name="occupants"
+                                name="ผู้เช่า"
                             />
                         </LineChart>
                     </ResponsiveContainer>

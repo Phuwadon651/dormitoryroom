@@ -1,39 +1,35 @@
-import { Suspense } from "react"
-import { getSettings } from "@/actions/settings-actions"
+import { getSettings } from "@/actions/setting-actions"
 import { SettingsForm } from "@/components/settings/settings-form"
-import { redirect } from "next/navigation"
+import { Settings } from "lucide-react"
+import { getCurrentUser } from "@/lib/auth"
+
+export const dynamic = 'force-dynamic'
 
 export default async function SettingsPage() {
-    const { success, data, error } = await getSettings()
-
-    if (!success) {
-        // If unauthorized or error, handle gracefull
-        // For 403, maybe redirect or show error component
-        if (error === 'Unauthorized') {
-            // Depending on how auth actions work, maybe redirect to login or dashboard
-            // But usually middleware handles this. 
-            // If we get here, it means backend rejected us.
-            return (
-                <div className="p-6">
-                    <h1 className="text-2xl font-bold text-red-500">Access Denied</h1>
-                    <p>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>
-                </div>
-            )
-        }
+    const currentUser = await getCurrentUser()
+    let settings = {}
+    try {
+        const result = await getSettings()
+        settings = result || {}
+    } catch (error) {
+        console.error("Failed to load settings:", error)
+        // Fallback to empty object to allow page to render "Under Construction" state
+        settings = {}
     }
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">ตั้งค่าระบบ (Settings)</h1>
-                <p className="text-muted-foreground">
-                    กำหนดค่าต่างๆ ของหอพัก ข้อมูลการเงิน และการแจ้งเตือน
-                </p>
+        <div className="space-y-6">
+            <div className="flex items-center gap-2">
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                    <Settings className="h-6 w-6 text-emerald-700" />
+                </div>
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">ตั้งค่าระบบ</h2>
+                    <p className="text-muted-foreground">จัดการข้อมูลหอพักและการตั้งค่าต่างๆ</p>
+                </div>
             </div>
 
-            <Suspense fallback={<div>Loading settings...</div>}>
-                <SettingsForm initialSettings={data || {}} />
-            </Suspense>
+            <SettingsForm initialSettings={settings} currentUser={currentUser} />
         </div>
     )
 }

@@ -15,16 +15,24 @@ class Maintenance extends Model
         'user_id',
         'room_id',
         'damage_details',
+        'report_images',
         'repair_type',
         'technician_id',
         'report_date',
         'fix_date',
         'status',
+        'payment_status',
+        'completion_proof_images',
+        'expense_amount',
+        'expense_details',
+        'expense_receipt_image',
     ];
 
     protected $casts = [
         'report_date' => 'datetime',
         'fix_date' => 'datetime',
+        'completion_proof_images' => 'array',
+        'report_images' => 'array',
     ];
 
     public function user()

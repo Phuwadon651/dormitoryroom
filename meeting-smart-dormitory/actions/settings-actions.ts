@@ -53,8 +53,16 @@ export async function updateSettings(data: Record<string, any>) {
         })
 
         if (!response.ok) {
-            const err = await response.json()
-            throw new Error(err.message || 'Failed to update settings')
+            const text = await response.text()
+            let errorMessage = 'Failed to update settings'
+            try {
+                const json = JSON.parse(text)
+                errorMessage = json.message || errorMessage
+            } catch (e) {
+                errorMessage = `${errorMessage}: ${text}`
+            }
+            console.error('Update Settings Error:', errorMessage)
+            return { success: false, error: errorMessage }
         }
 
         revalidatePath('/dashboard/settings')

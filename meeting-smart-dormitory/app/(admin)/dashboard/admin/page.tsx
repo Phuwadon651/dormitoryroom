@@ -2,16 +2,23 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getRooms } from "@/actions/room-actions"
 import { getUsers } from "@/actions/user-actions"
-import { getRevenueStats } from "@/actions/finance-actions"
+import { getRevenueStats, getPayments, getInvoices } from "@/actions/finance-actions"
+import { getMaintenanceRequests } from "@/actions/maintenance-actions"
+import { getExpiringContracts } from "@/actions/contract-actions"
 import { Users, Building, Wallet, Activity } from "lucide-react"
 import { OverviewChart } from "@/components/dashboard/overview-chart"
+import { ContractExpiryWidget } from "@/components/dashboard/contract-expiry-widget"
 
 export default async function AdminDashboard() {
     // Fetch data
-    const [rooms, users, revenueStats] = await Promise.all([
+    const [rooms, users, revenueStats, invoices, payments, maintenances, expiringContracts] = await Promise.all([
         getRooms(),
         getUsers(),
-        getRevenueStats()
+        getRevenueStats(),
+        getInvoices(),
+        getPayments(),
+        getMaintenanceRequests(),
+        getExpiringContracts(30) // 30 days threshold
     ]);
 
     // Calculate Stats
@@ -25,6 +32,18 @@ export default async function AdminDashboard() {
 
     const totalUsers = users.length
     const totalTenants = users.filter(u => u.role === 'Tenant').length
+
+    // Calculate Activity (Last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const recentInvoices = invoices.filter(inv => new Date(inv.status === 'Paid' ? inv.due_date : inv.due_date) > sevenDaysAgo).length;
+    const recentMaintenance = maintenances.filter(m => new Date(m.created_at || m.report_date) > sevenDaysAgo).length;
+    const recentActivityCount = recentInvoices + recentMaintenance;
+
+    // Urgent Notifications
+    const pendingPayments = payments.filter(p => p.status === 'Pending');
+    const pendingMaintenances = maintenances.filter(m => m.status === 'pending');
 
     return (
         <div className="space-y-6">
@@ -57,29 +76,18 @@ export default async function AdminDashboard() {
                         </CardContent>
                     </Card>
                 </Link>
-                <Link href="/dashboard/admin/users">
-                    <Card className="hover:bg-slate-50 transition-colors cursor-pointer h-full">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">ผู้ใช้งานในระบบ</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{totalUsers}</div>
-                            <p className="text-xs text-muted-foreground">
-                                ผู้เช่า {totalTenants} คน
-                            </p>
-                        </CardContent>
-                    </Card>
-                </Link>
+
+                <ContractExpiryWidget contracts={expiringContracts} />
+
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">กิจกรรมล่าสุด</CardTitle>
                         <Activity className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">+12</div>
+                        <div className="text-2xl font-bold">+{recentActivityCount}</div>
                         <p className="text-xs text-muted-foreground">
-                            รายการแจ้งซ่อมและบิลใหม่
+                            รายการแจ้งซ่อมและบิลใหม่ (7 วัน)
                         </p>
                     </CardContent>
                 </Card>
@@ -95,18 +103,37 @@ export default async function AdminDashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            <div className="flex items-center p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-yellow-800">รอตรวจสอบการชำระเงิน</p>
-                                    <p className="text-xs text-yellow-600">3 รายการย้อนหลัง 5 วัน</p>
+                            {pendingPayments.length > 0 ? (
+                                <Link href="/dashboard/admin/finance" className="block">
+                                    <div className="flex items-center p-3 bg-yellow-50 rounded-lg border border-yellow-100 hover:bg-yellow-100 transition-colors cursor-pointer">
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-medium text-yellow-800">รอตรวจสอบการชำระเงิน</p>
+                                            <p className="text-xs text-yellow-600">{pendingPayments.length} รายการ</p>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ) : (
+                                <div className="p-3 text-sm text-slate-500 text-center border rounded-lg bg-slate-50">
+                                    ไม่มีรายการรอตรวจสอบการชำระเงิน
                                 </div>
-                            </div>
-                            <div className="flex items-center p-3 bg-orange-50 rounded-lg border border-orange-100">
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-orange-800">แจ้งซ่อมรออนุมัติ</p>
-                                    <p className="text-xs text-orange-600">ห้อง 102 ก๊อกน้ำรั่ว</p>
+                            )}
+
+                            {pendingMaintenances.length > 0 ? (
+                                <Link href="/dashboard/maintenance?status=pending" className="block">
+                                    <div className="flex items-center p-3 bg-orange-50 rounded-lg border border-orange-100 hover:bg-orange-100 transition-colors cursor-pointer">
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-medium text-orange-800">แจ้งซ่อมรออนุมัติ</p>
+                                            <p className="text-xs text-orange-600">
+                                                {pendingMaintenances.length} รายการ ล่าสุด: ห้อง {pendingMaintenances[0].room?.room_number || pendingMaintenances[0].room_id}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ) : (
+                                <div className="p-3 text-sm text-slate-500 text-center border rounded-lg bg-slate-50">
+                                    ไม่มีรายการแจ้งซ่อมรออนุมัติ
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

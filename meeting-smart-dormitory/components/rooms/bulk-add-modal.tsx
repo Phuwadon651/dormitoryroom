@@ -46,7 +46,7 @@ export function BulkAddRoomModal({ trigger, onSuccess }: BulkAddRoomModalProps) 
     const router = useRouter()
 
     const [floor, setFloor] = useState(1)
-    const [startNumber, setStartNumber] = useState(101)
+    const [startNumber, setStartNumber] = useState("101")
     const [quantity, setQuantity] = useState(10)
     const [roomType, setRoomType] = useState<RoomType>('พัดลม')
     const [price, setPrice] = useState(3500)
@@ -57,7 +57,7 @@ export function BulkAddRoomModal({ trigger, onSuccess }: BulkAddRoomModalProps) 
         setFloor(val)
         // Auto-suggest start number: Floor * 100 + 1
         if (val > 0) {
-            setStartNumber(val * 100 + 1)
+            setStartNumber((val * 100 + 1).toString())
         }
     }
 
@@ -130,13 +130,13 @@ export function BulkAddRoomModal({ trigger, onSuccess }: BulkAddRoomModalProps) 
                         <Label htmlFor="startNumber">เลขห้องเริ่มต้น</Label>
                         <Input
                             id="startNumber"
-                            type="number"
+                            type="text"
                             value={startNumber}
-                            onChange={(e) => setStartNumber(parseInt(e.target.value) || 0)}
+                            onChange={(e) => setStartNumber(e.target.value)}
                             required
                         />
                         <p className="text-xs text-muted-foreground">
-                            เช่น เริ่ม 101 จะได้ 101, 102, 103...
+                            เช่น เริ่ม 101, A101, B201... ระบบจะรันเลขต่อให้
                         </p>
                     </div>
 

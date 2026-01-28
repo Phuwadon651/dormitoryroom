@@ -10,6 +10,7 @@ async function getAuthHeaders() {
     const session = await getSession();
     return {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': session ? `Bearer ${session.token}` : ''
     };
 }
@@ -83,7 +84,8 @@ export async function createTenant(data: Omit<Tenant, 'id'>): Promise<{ success:
         move_in_date: data.moveInDate,
         line_id: '',
         username: data.username,
-        password: data.password
+        password: data.password,
+        skip_contract: (data as any).skipContract,
     };
 
     try {
@@ -100,7 +102,15 @@ export async function createTenant(data: Omit<Tenant, 'id'>): Promise<{ success:
             // Try to parse Laravel validation error
             try {
                 const jsonErr = JSON.parse(text);
-                if (jsonErr.message) return { success: false, error: jsonErr.message };
+                if (jsonErr.message) {
+                    let msg = jsonErr.message;
+                    // Translate common errors
+                    if (msg.includes('email has already been taken')) msg = 'อีเมลนี้มีผู้ใช้งานในระบบแล้ว';
+                    else if (msg.includes('username has already been taken')) msg = 'เบอร์โทรศัพท์นี้มีผู้ใช้งานในระบบแล้ว';
+                    else if (msg.includes('phone has already been taken')) msg = 'เบอร์โทรศัพท์นี้ถูกลงทะเบียนแล้ว';
+
+                    return { success: false, error: msg };
+                }
             } catch { }
 
             return { success: false, error: `บันทึกไม่สำเร็จ (Status: ${res.status})` };
@@ -150,26 +160,47 @@ export async function updateTenant(id: string, data: Partial<Tenant>): Promise<{
 
         if (res.ok) {
             revalidatePath('/', 'layout');
-            return { success: true, data: mapToFrontend(await res.json()) };
+            const updatedData = await res.json();
+            return { success: true, data: mapToFrontend(updatedData) };
         }
 
         const text = await res.text();
-        return { success: false, error: `Update failed: ${text}` };
+        try {
+            const jsonErr = JSON.parse(text);
+            if (jsonErr.message) return { success: false, error: jsonErr.message };
+        } catch { }
+
+        return { success: false, error: `Update failed: ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}` };
 
     } catch (e) {
         return { success: false, error: 'Connection error' };
     }
 }
 
-export async function deleteTenant(id: string): Promise<boolean> {
+export async function deleteTenant(id: string): Promise<{ success: boolean; error?: string }> {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/tenants/${id}`, {
-        method: 'DELETE',
-        headers
-    });
+    try {
+        const res = await fetch(`${API_URL}/tenants/${id}`, {
+            method: 'DELETE',
+            headers
+        });
 
-    revalidatePath('/', 'layout');
-    return res.ok;
+        if (res.ok) {
+            revalidatePath('/', 'layout');
+            return { success: true };
+        }
+
+        const text = await res.text();
+        try {
+            const jsonErr = JSON.parse(text);
+            if (jsonErr.message) return { success: false, error: jsonErr.message };
+        } catch { }
+
+        return { success: false, error: `Delete failed: ${text.substring(0, 100)}` };
+
+    } catch (e) {
+        return { success: false, error: 'Network error occurred' };
+    }
 }
 
 export async function getTenantProfile() {
@@ -184,5 +215,90 @@ export async function getTenantProfile() {
     } catch (e) {
         console.error('Get Tenant Profile Error:', e);
         return null;
+    }
+}
+
+export async function getTenantDashboardData() {
+    const profileData = await getTenantProfile();
+    if (!profileData || !profileData.profile) {
+        return null;
+    }
+
+    const tenant = profileData.profile;
+    let totalBalance = 0;
+
+    // Calculate Balance from Contracts -> Invoices
+    if (tenant.contracts) {
+        tenant.contracts.forEach((contract: any) => {
+            if (contract.invoices) {
+                contract.invoices.forEach((inv: any) => {
+                    if (inv.status === 'Pending' || inv.status === 'Overdue') {
+                        totalBalance += Number(inv.total_amount);
+                    }
+                });
+            }
+        });
+    }
+
+    // Mock Announcements & Parcels for now as backend might not have them
+    const announcements = [
+        { id: 1, title: 'แจ้งปิดปรับปรุงระบบน้ำ', date: '2024-01-20', content: 'จะมีการปิดปรับปรุงระบบน้ำในวันที่ 25 ม.ค. เวลา 10:00 - 12:00 น.' },
+        { id: 2, title: 'กำหนดการชำระค่าเช่า', date: '2024-01-01', content: 'กรุณาชำระค่าเช่าภายในวันที่ 5 ของทุกเดือน' }
+    ];
+
+    const parcels: any[] = [
+        // { id: 1, arrived_at: '2024-01-22', carrier: 'Kerry', tracking: 'KER123456' } 
+    ];
+
+    return {
+        tenant,
+        balance: totalBalance,
+        announcements,
+        parcels
+    };
+}
+
+export async function getTenantInvoices() {
+    const profileData = await getTenantProfile();
+    if (!profileData || !profileData.profile) return [];
+
+    const invoices: any[] = [];
+    if (profileData.profile.contracts) {
+        profileData.profile.contracts.forEach((c: any) => {
+            if (c.invoices) {
+                invoices.push(...c.invoices);
+            }
+        });
+    }
+
+    return invoices.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+}
+
+export async function getMaintenances() {
+    const profileData = await getTenantProfile();
+    return profileData?.maintenances || [];
+}
+
+export async function createMaintenance(formData: FormData) {
+    const headers = await getAuthHeaders();
+    // Remove Content-Type: application/json to let fetch generate boundary for FormData
+    const { 'Content-Type': ct, ...restHeaders } = headers;
+
+    try {
+        const res = await fetch(`${API_URL}/maintenances`, {
+            method: 'POST',
+            headers: restHeaders,
+            body: formData as any
+        });
+
+        if (res.ok) {
+            revalidatePath('/', 'layout');
+            return { success: true };
+        }
+
+        const text = await res.text();
+        return { success: false, message: "บันทึกไม่สำเร็จ: " + text };
+    } catch (e) {
+        return { success: false, message: 'Connection error' };
     }
 }

@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Room extends Model
 {
     use HasFactory;
+
+    // protected $primaryKey = 'room_id'; // Removed - using default 'id'
+
 
     protected $fillable = [
         'room_number',
@@ -16,16 +18,16 @@ class Room extends Model
         'room_type',
         'price',
         'status',
-        'furniture_details',
+        'furniture_details'
     ];
 
-    public function tenants(): HasMany
+    public function tenants()
     {
         return $this->hasMany(Tenant::class);
     }
 
-    public function contracts(): HasMany
+    public function meterReadings()
     {
-        return $this->hasMany(Contract::class);
+        return $this->hasMany(MeterReading::class);
     }
 }

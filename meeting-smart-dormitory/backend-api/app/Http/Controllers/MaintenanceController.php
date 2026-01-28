@@ -39,7 +39,17 @@ class MaintenanceController extends Controller
             'damage_details' => 'required|string',
             'repair_type' => 'required|string',
             'report_date' => 'required|date',
+            'report_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
+
+        $reportImages = [];
+        if ($request->hasFile('report_images')) {
+            foreach ($request->file('report_images') as $image) {
+                // Store in 'public' disk (storage/app/public/maintenance_reports)
+                $path = $image->store('maintenance_reports', 'public');
+                $reportImages[] = $path;
+            }
+        }
 
         $maintenance = Maintenance::create([
             'user_id' => Auth::id(),
@@ -48,9 +58,69 @@ class MaintenanceController extends Controller
             'repair_type' => $validated['repair_type'],
             'report_date' => $validated['report_date'],
             'status' => 'pending',
+            'report_images' => $reportImages,
         ]);
 
         return response()->json($maintenance, 201);
+    }
+
+    public function accept($id)
+    {
+        $maintenance = Maintenance::findOrFail($id);
+        
+        // Ensure user is a technician?
+        // if (Auth::user()->role !== 'Technician') { ... }
+
+        $maintenance->update([
+            'technician_id' => Auth::id(),
+            'status' => 'in_progress',
+        ]);
+
+        return response()->json($maintenance);
+    }
+
+    public function complete(Request $request, $id)
+    {
+        $maintenance = Maintenance::findOrFail($id);
+
+        $validated = $request->validate([
+            'completion_proof_images.*' => 'required|image|max:2048',
+            'expense_amount' => 'nullable|numeric',
+            'expense_details' => 'nullable|string',
+            'expense_receipt_image' => 'nullable|image|max:2048',
+        ]);
+
+        $proofImages = [];
+        if ($request->hasFile('completion_proof_images')) {
+            foreach ($request->file('completion_proof_images') as $image) {
+                $path = $image->store('maintenance_proofs', 'public');
+                $proofImages[] = $path;
+            }
+        }
+
+        $receiptPath = null;
+        if ($request->hasFile('expense_receipt_image')) {
+            $receiptPath = $request->file('expense_receipt_image')->store('maintenance_receipts', 'public');
+        }
+
+        $maintenance->update([
+            'status' => 'completed', 
+            'fix_date' => now(),
+            'completion_proof_images' => $proofImages,
+            'expense_amount' => $request->expense_amount,
+            'expense_details' => $request->expense_details,
+            'expense_receipt_image' => $receiptPath,
+        ]);
+
+        return response()->json($maintenance);
+    }
+
+    public function pay($id)
+    {
+        // Add authorization check if needed
+        $maintenance = Maintenance::findOrFail($id);
+        $maintenance->update(['payment_status' => 'paid']);
+        return response()->json($maintenance);
     }
 
     public function show($id)
