@@ -271,9 +271,8 @@ export function SidebarNav({ currentUser, onLinkClick }: SidebarNavProps) {
                         <CollapsibleFinanceMenu pathname={pathname} />
                     )}
 
-                    {currentUser.permissions?.accessRepair !== false && (
-                        <CollapsibleMaintenanceMenu pathname={pathname} />
-                    )}
+                    {/* Repair Menu - Visible to Everyone */}
+                    <CollapsibleMaintenanceMenu pathname={pathname} />
 
                     {currentUser.permissions?.accessSettings !== false && (
                         <CollapsibleSettingsMenu pathname={pathname} />

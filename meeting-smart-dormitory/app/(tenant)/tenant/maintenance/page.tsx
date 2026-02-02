@@ -1,13 +1,25 @@
-
-import { getMaintenances } from "@/actions/tenant-actions"
-import { MaintenanceList } from "@/components/tenant/maintenance-list"
-
-export const dynamic = 'force-dynamic'
+import { getSession } from "@/actions/auth-actions"
+import MaintenanceView from "@/components/maintenance/maintenance-view"
+import { redirect } from "next/navigation"
+import { User } from "@/types/user"
 
 export default async function TenantMaintenancePage() {
-    const requests = await getMaintenances()
+    const session = await getSession()
+    if (!session) {
+        redirect('/login')
+    }
+
+    const user: User = {
+        id: session.userId,
+        username: session.name, // Using name/id as username fallback if needed, or fetch full user
+        name: session.name,
+        role: session.role as any,
+        // Other fields optional
+    }
 
     return (
-        <MaintenanceList requests={requests} />
+        <div className="p-4 pb-20"> {/* Add padding for bottom nav */}
+            <MaintenanceView user={user} />
+        </div>
     )
 }

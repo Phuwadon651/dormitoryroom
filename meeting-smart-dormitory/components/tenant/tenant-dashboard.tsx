@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import {
     Home, Droplet, Zap, FileText,
     Wrench, Bell, ChevronRight, History,
-    CreditCard, QrCode
+    CreditCard, QrCode, Edit, Plus
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,11 +17,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getTenantProfile } from "@/actions/tenant-actions"
 import { getSettings } from "@/actions/setting-actions"
+import { MaintenanceList } from "./maintenance-list-component"
+import CreateMaintenanceModal from "@/components/maintenance/create-maintenance-modal"
+import MaintenanceDetailDialog from "@/components/maintenance/maintenance-detail-dialog"
+import { MaintenanceRequest } from "@/types/maintenance"
 
 // Utility to format date
 const formatDate = (dateStr: string) => {
     if (!dateStr) return '-'
-    // Assuming dateStr is YYYY-MM-DD or standard ISO
     try {
         return new Date(dateStr).toLocaleDateString('th-TH', {
             year: 'numeric',
@@ -36,47 +40,60 @@ export function TenantDashboard() {
     const [profile, setProfile] = useState<any>(null)
     const [invoices, setInvoices] = useState<any[]>([])
     const [settings, setSettings] = useState<any>(null)
-    // const [maintenances, setMaintenances] = useState<any[]>([]) // Pending implementation in response
+    const [maintenances, setMaintenances] = useState<any[]>([])
+
+    // Maintenance Detail State
+    const [selectedRequest, setSelectedRequest] = useState<MaintenanceRequest | null>(null)
+    const [detailOpen, setDetailOpen] = useState(false)
+
+    async function loadData() {
+        try {
+            const [profileData, settingsData] = await Promise.all([
+                getTenantProfile(),
+                getSettings()
+            ])
+
+            // Fetch maintenances using the separate action if needed, or rely on profile data if it includes it.
+            // For now, let's assume we need to fetch it to get the latest status updates.
+            const maintenanceRes = await import("@/actions/tenant-actions").then(m => m.getMaintenances())
+
+            if (settingsData) {
+                setSettings(settingsData)
+            }
+
+            if (profileData && profileData.profile) {
+                setProfile(profileData.profile);
+                let allInvoices: any[] = [];
+                if (profileData.profile.contracts) {
+                    profileData.profile.contracts.forEach((c: any) => {
+                        if (c.invoices) allInvoices.push(...c.invoices);
+                    });
+                }
+                allInvoices.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                setInvoices(allInvoices);
+            }
+
+            setMaintenances(maintenanceRes || []);
+
+        } catch (e) {
+            console.error("Failed to load data", e)
+        } finally {
+            setLoading(false);
+        }
+    }
 
     useEffect(() => {
-        async function load() {
-            try {
-                const [profileData, settingsData] = await Promise.all([
-                    getTenantProfile(),
-                    getSettings()
-                ])
-
-                if (settingsData) {
-                    setSettings(settingsData)
-                }
-
-                if (profileData && profileData.profile) {
-                    setProfile(profileData.profile);
-                    // Extract invoices from contracts
-                    // Structure: profile.contracts[].invoices[]
-                    let allInvoices: any[] = [];
-                    if (profileData.profile.contracts) {
-                        profileData.profile.contracts.forEach((c: any) => {
-                            if (c.invoices) allInvoices.push(...c.invoices);
-                        });
-                    }
-                    // Sort descending date
-                    allInvoices.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-                    setInvoices(allInvoices);
-                }
-            } catch (e) {
-                console.error("Failed to load data", e)
-            } finally {
-                setLoading(false);
-            }
-        }
-        load();
+        loadData();
     }, [])
+
+    const handleCardClick = (req: MaintenanceRequest) => {
+        setSelectedRequest(req);
+        setDetailOpen(true);
+    }
 
     if (loading) return <div className="p-8 text-center">กำลังโหลดข้อมูล...</div>
     if (!profile) return <div className="p-8 text-center text-red-500">ไม่พบข้อมูลผู้เช่า หรือเซสชันหมดอายุ</div>
 
-    // Calculate current bill
     const pendingBill = invoices.find(inv => inv.status === 'Pending');
 
     return (
@@ -92,21 +109,22 @@ export function TenantDashboard() {
                         <p className="text-xs text-muted-foreground">{profile.room?.building || 'อาคาร A'} ชั้น {profile.room?.floor || '-'}</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                     <Badge variant={profile.status === 'Active' ? 'default' : 'secondary'} className="bg-green-500 hover:bg-green-600">
                         {profile.status}
                     </Badge>
-                    {/* Edit Profile / Password Reset triggers could go here */}
                     <Dialog>
                         <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-xs">แก้ไขข้อมูล</Button>
+                            <Button variant="ghost" size="icon" className="text-slate-500 hover:text-slate-800 rounded-full h-8 w-8">
+                                <Edit className="w-4 h-4" />
+                            </Button>
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
                                 <DialogTitle>แก้ไขข้อมูลส่วนตัว</DialogTitle>
                                 <DialogDescription>
                                     หากต้องการเปลี่ยนรหัสผ่าน หรือแก้ไขข้อมูลสำคัญ
-                                    กรุณาติดต่อผู้ดูแลหอพัก หรือแจ้งผ่านเมนู "แจ้งซ่อม/ปัญหา" &gt; "อื่นๆ"
+                                    กรุณาติดต่อผู้ดูแลหอพัก หรือแจ้งผ่านเมนู "แจ้งซ่อม/ปัญหา" {'>'} "อื่นๆ"
                                 </DialogDescription>
                             </DialogHeader>
                         </DialogContent>
@@ -116,15 +134,14 @@ export function TenantDashboard() {
 
             {/* Main Tabs */}
             <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
+                <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
                     <TabsTrigger value="overview">ภาพรวม</TabsTrigger>
                     <TabsTrigger value="billing">ชำระเงิน</TabsTrigger>
-                    <TabsTrigger value="services">บริการ</TabsTrigger>
                 </TabsList>
 
                 {/* OVERVIEW TAB */}
                 <TabsContent value="overview" className="space-y-4">
-                    {/* Urgency: Bill Card */}
+                    {/* Bill Card */}
                     {pendingBill ? (
                         <Card className="border-l-4 border-l-red-500">
                             <CardHeader className="pb-2">
@@ -132,7 +149,7 @@ export function TenantDashboard() {
                                     ยอดที่ต้องชำระเดือนนี้
                                     <span className="text-2xl font-bold text-red-600">฿{Number(pendingBill.total_amount).toLocaleString()}</span>
                                 </CardTitle>
-                                <CardDescription>ประจวบเดือน {pendingBill.period_month}/{pendingBill.period_year}</CardDescription>
+                                <CardDescription>รอบ {pendingBill.period_month}/{pendingBill.period_year}</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="flex justify-between items-center text-sm">
@@ -153,17 +170,49 @@ export function TenantDashboard() {
                         </Card>
                     )}
 
-                    {/* Notifications (Mock for now or implement Backend) */}
-                    <div className="space-y-2">
+                    {/* Contract Link Button */}
+                    <Link href="/tenant/contract" className="block">
+                        <div className="bg-white border rounded-xl p-4 flex items-center justify-between shadow-sm hover:bg-slate-50 transition-colors">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                                    <FileText className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-slate-800">สัญญาเช่าห้องพัก</p>
+                                    <p className="text-xs text-slate-500">ดูรายละเอียดสัญญาและกฎระเบียบ</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-slate-400" />
+                        </div>
+                    </Link>
+
+                    {/* Maintenance Section */}
+                    <div>
+                        <div className="flex items-center justify-between mb-4 mt-6">
+                            <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                                <Wrench className="w-5 h-5 text-orange-500" />
+                                รายการแจ้งซ่อม
+                            </h3>
+                            <CreateMaintenanceModal
+                                refresh={loadData}
+                                prefilledRoom={profile?.room}
+                            />
+                        </div>
+
+                        <MaintenanceList requests={maintenances} onClick={handleCardClick} />
+                    </div>
+
+                    {/* Notifications */}
+                    <div className="space-y-2 pt-4 border-t mt-6">
                         <h3 className="font-semibold text-slate-700 flex items-center gap-2">
                             <Bell className="w-4 h-4" /> แจ้งเตือนล่าสุด
                         </h3>
-                        {/* Placeholder notifications */}
+                        {/* Placeholder Notifications */}
                         <div className="bg-white p-3 rounded-lg border shadow-sm flex items-start gap-3">
                             <div className="mt-1 h-2 w-2 rounded-full bg-blue-500" />
                             <div className="flex-1">
-                                <p className="text-sm font-medium">ยินดีต้อนรับสู่หอพัก</p>
-                                <p className="text-xs text-muted-foreground">{formatDate(profile.created_at)}</p>
+                                <p className="text-sm font-medium">ระบบแจ้งเตือนกำลังปรับปรุง</p>
+                                <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString('th-TH')}</p>
                             </div>
                         </div>
                     </div>
@@ -172,6 +221,7 @@ export function TenantDashboard() {
 
                 {/* BILLING TAB */}
                 <TabsContent value="billing" className="space-y-4">
+                    {/* Same Billing Content */}
                     {pendingBill ? (
                         <Card>
                             <CardHeader>
@@ -212,7 +262,6 @@ export function TenantDashboard() {
                                             </DialogDescription>
                                         </DialogHeader>
                                         <div className="flex flex-col items-center justify-center py-6 gap-4">
-                                            {/* Valid QR Code Image Placeholder */}
                                             <div className="bg-white p-4 rounded-xl border shadow-sm">
                                                 {settings?.finance?.promptpay_qr_image || settings?.general?.promptpay_qr_image ? (
                                                     <img
@@ -234,9 +283,6 @@ export function TenantDashboard() {
                                                 <p className="text-xs text-muted-foreground">{settings?.finance?.promptpay_name || settings?.general?.promptpay_name || ''}</p>
                                             </div>
                                         </div>
-                                        <DialogFooter className="sm:justify-center">
-                                            {/* Footer content if needed */}
-                                        </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
 
@@ -255,13 +301,9 @@ export function TenantDashboard() {
                                             const amount = formData.get('amount')
                                             const date = formData.get('payment_date')
                                             if (!amount || !date) return alert('กรุณากรอกข้อมูลให้ครบ')
-
-                                            // Append invoice_id manually if not in inputs (it is not)
                                             formData.append('invoice_id', pendingBill.id);
-
                                             const { submitPayment } = await import('@/actions/finance-actions')
                                             const res = await submitPayment(formData)
-
                                             if (res.success) {
                                                 alert('แจ้งชำระเงินเรียบร้อยแล้ว รอการตรวจสอบครับ')
                                                 window.location.reload()
@@ -317,34 +359,15 @@ export function TenantDashboard() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-
-                {/* SERVICES / MAINTENANCE TAB */}
-                <TabsContent value="services" className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button className="h-24 flex flex-col items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600">
-                                    <Wrench className="w-8 h-8" />
-                                    แจ้งซ่อม
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>แจ้งซ่อม / ปัญหา</DialogTitle>
-                                    <DialogDescription>กรอกรายละเอียดปัญหาที่พบพร้อมแนบรูปภาพหากมี</DialogDescription>
-                                </DialogHeader>
-                                {/* Form implementation would go here - likely needs another Server Action */}
-                                <div className="text-center py-4 text-muted-foreground">ระบบแจ้งซ่อมกำลังเปิดใช้งานเร็วๆ นี้</div>
-                            </DialogContent>
-                        </Dialog>
-
-                        <div className="h-24 flex flex-col items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow p-2 cursor-pointer">
-                            <FileText className="w-8 h-8" />
-                            สัญญา/เอกสาร
-                        </div>
-                    </div>
-                </TabsContent>
             </Tabs>
+
+            <MaintenanceDetailDialog
+                request={selectedRequest}
+                open={detailOpen}
+                onOpenChange={setDetailOpen}
+                user={{ role: 'Tenant', id: profile?.id, username: profile?.name } as any}
+                onSuccess={loadData}
+            />
         </div>
     )
 }

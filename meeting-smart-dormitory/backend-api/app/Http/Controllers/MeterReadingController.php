@@ -24,7 +24,7 @@ class MeterReadingController extends Controller
         $totalRooms = Room::count();
         // $occupiedRooms = Room::where('status', 'ไม่ว่าง')->count();
         $occupiedRooms = Room::whereHas('tenants', function($q) {
-            $q->where('is_active', true);
+            $q->where('status', 'Active');
         })->count();
         
         // Rooms that have a reading for this month (using date range)
@@ -74,7 +74,7 @@ class MeterReadingController extends Controller
 
         // Get all rooms with specific month reading
         $rooms = Room::with(['tenants' => function($q) {
-                $q->where('is_active', true);
+                $q->where('status', 'Active');
             }, 'meterReadings' => function($q) use ($start, $end) {
                 $q->whereBetween('reading_date', [$start, $end]);
             }])
@@ -92,6 +92,7 @@ class MeterReadingController extends Controller
                  'floor' => $room->floor,
                  'status' => $room->tenants->isNotEmpty() ? 'ไม่ว่าง' : 'ว่าง', // Priority to relationship
                  'has_tenant' => $room->tenants->isNotEmpty(),
+                 'tenant_name' => $room->tenants->isNotEmpty() ? $room->tenants->first()->name : null,
                  'reading' => $reading ? [
                      'id' => $reading->id,
                      'electricity' => $reading->electricity_meter,

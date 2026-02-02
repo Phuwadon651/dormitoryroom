@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
       {
         source: '/sanctum/csrf-cookie',
         destination: 'http://127.0.0.1:8000/sanctum/csrf-cookie',
+      },
+      {
+        source: '/uploads/:path*',
+        destination: 'http://127.0.0.1:8000/uploads/:path*',
       }
     ]
   },

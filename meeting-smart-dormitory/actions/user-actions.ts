@@ -108,3 +108,8 @@ export async function toggleUserStatus(id: string, isActive: boolean) {
     revalidatePath('/dashboard/admin/users');
     return { success: true };
 }
+
+export async function getTechnicians(): Promise<User[]> {
+    const users = await getUsers();
+    return users.filter(u => u.role === 'Technician');
+}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Building2, Save, AlertTriangle, Camera, CheckCircle2, History } from "lucide-react"
+import { Building2, Save, AlertTriangle, Camera, CheckCircle2, History, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -191,11 +191,20 @@ export function MeterReadingList({ initialReadings, month, year }: MeterReadingL
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="text-2xl font-bold text-slate-800">{reading.room_number}</h3>
-                                    {reading.has_tenant ? (
-                                        <p className="text-sm text-blue-600 font-medium truncate w-full" title={reading.tenant_name}>{reading.tenant_name}</p>
-                                    ) : (
-                                        <p className="text-sm text-slate-400">ห้องว่าง</p>
-                                    )}
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {reading.has_tenant ? (
+                                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-100 w-fit">
+                                                <User className="w-3.5 h-3.5" />
+                                                <span className="text-xs font-medium truncate max-w-[100px]" title={reading.tenant_name}>
+                                                    {reading.tenant_name}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                                                ห้องว่าง
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 {reading.is_saved && <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none"><CheckCircle2 className="w-3 h-3 mr-1" /> บันทึกแล้ว</Badge>}
                             </div>

@@ -16,11 +16,7 @@ const NAV_ITEMS = [
         href: "/tenant/invoices",
         icon: Receipt
     },
-    {
-        label: "แจ้งซ่อม",
-        href: "/tenant/maintenance",
-        icon: Wrench
-    },
+
     {
         label: "สัญญา",
         href: "/tenant/contract",

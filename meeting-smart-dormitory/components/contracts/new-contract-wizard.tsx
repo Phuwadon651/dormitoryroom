@@ -367,15 +367,15 @@ export function NewContractWizard({ onSuccess, open, onOpenChange }: { onSuccess
     // Main Render
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+            <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden [&>button]:hidden">
                 {/* Header Steps */}
-                <div className="bg-slate-900 text-white p-6 relative">
+                <div className="bg-white text-slate-900 p-6 relative border-b">
                     <div className="flex justify-between items-center mb-6">
                         <DialogTitle className="text-xl font-bold">ทำสัญญาเช่าใหม่ (New Contract)</DialogTitle>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="text-slate-400 hover:text-white hover:bg-slate-800"
+                            className="text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                             onClick={() => onOpenChange(false)}
                         >
                             <X className="w-5 h-5" />
@@ -386,14 +386,14 @@ export function NewContractWizard({ onSuccess, open, onOpenChange }: { onSuccess
                             <div key={s.id} className="flex flex-col items-center relative z-10">
                                 <div className={`
                                     w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-colors
-                                    ${step >= s.id ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}
+                                    ${step >= s.id ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'}
                                 `}>
                                     <s.icon className="w-5 h-5" />
                                 </div>
-                                <span className={`text-xs ${step >= s.id ? 'text-blue-200' : 'text-slate-500'}`}>{s.title}</span>
+                                <span className={`text-xs ${step >= s.id ? 'text-blue-600' : 'text-slate-500'}`}>{s.title}</span>
                                 {/* Line Connector */}
                                 {i < STEPS.length - 1 && (
-                                    <div className="absolute top-5 left-1/2 w-full h-[2px] bg-slate-700 -z-10"
+                                    <div className="absolute top-5 left-1/2 w-full h-[2px] bg-slate-200 -z-10"
                                         style={{ width: 'calc(100% * 3)' }} /* Hacky manual width */
                                     ></div>
                                 )}

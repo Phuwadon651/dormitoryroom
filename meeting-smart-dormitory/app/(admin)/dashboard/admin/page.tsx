@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getRooms } from "@/actions/room-actions"
 import { getUsers } from "@/actions/user-actions"
 import { getRevenueStats, getPayments, getInvoices } from "@/actions/finance-actions"
-import { getMaintenanceRequests } from "@/actions/maintenance-actions"
+import { fetchMaintenances } from "@/actions/maintenance-actions"
 import { getExpiringContracts } from "@/actions/contract-actions"
 import { Users, Building, Wallet, Activity } from "lucide-react"
 import { OverviewChart } from "@/components/dashboard/overview-chart"
@@ -17,7 +17,7 @@ export default async function AdminDashboard() {
         getRevenueStats(),
         getInvoices(),
         getPayments(),
-        getMaintenanceRequests(),
+        fetchMaintenances(),
         getExpiringContracts(30) // 30 days threshold
     ]);
 
@@ -44,6 +44,7 @@ export default async function AdminDashboard() {
     // Urgent Notifications
     const pendingPayments = payments.filter(p => p.status === 'Pending');
     const pendingMaintenances = maintenances.filter(m => m.status === 'pending');
+    const completedMaintenances = maintenances.filter(m => m.status === 'completed');
 
     return (
         <div className="space-y-6">
@@ -133,6 +134,19 @@ export default async function AdminDashboard() {
                                 <div className="p-3 text-sm text-slate-500 text-center border rounded-lg bg-slate-50">
                                     ไม่มีรายการแจ้งซ่อมรออนุมัติ
                                 </div>
+                            )}
+
+                            {completedMaintenances.length > 0 && (
+                                <Link href="/dashboard/maintenance?status=completed" className="block">
+                                    <div className="flex items-center p-3 bg-green-50 rounded-lg border border-green-100 hover:bg-green-100 transition-colors cursor-pointer">
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-medium text-green-800">งานซ่อมที่เสร็จสิ้น</p>
+                                            <p className="text-xs text-green-600">
+                                                {completedMaintenances.length} รายการ ล่าสุด: ห้อง {completedMaintenances[0].room?.room_number || completedMaintenances[0].room_id}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </Link>
                             )}
                         </div>
                     </CardContent>

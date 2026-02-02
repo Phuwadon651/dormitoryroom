@@ -35,7 +35,7 @@ export function LoginForm() {
                     router.push('/portal/tenant')
                     break;
                 case 'Technician':
-                    router.push('/dashboard/technician/jobs')
+                    router.push('/dashboard/maintenance')
                     break;
                 default:
                     router.push('/dashboard/admin')

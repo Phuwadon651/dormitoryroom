@@ -35,7 +35,7 @@ class MaintenanceController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'room_id' => 'required|exists:rooms,room_id',
+            'room_id' => 'required|exists:rooms,id',
             'damage_details' => 'required|string',
             'repair_type' => 'required|string',
             'report_date' => 'required|date',

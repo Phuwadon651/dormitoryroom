@@ -23,6 +23,7 @@ interface PaymentListProps {
 export function PaymentList({ initialPayments }: PaymentListProps) {
     const router = useRouter()
     const [payments, setPayments] = useState<Payment[]>(initialPayments)
+    const [selectedSlip, setSelectedSlip] = useState<string | null>(null)
 
     const handleVerify = async (id: string, status: 'Paid' | 'Reject') => {
         if (!confirm(`ยืนยันการเปลี่ยนสถานะเป็น ${status}?`)) return
@@ -62,7 +63,13 @@ export function PaymentList({ initialPayments }: PaymentListProps) {
                                     <TableCell>{p.payment_method}</TableCell>
                                     <TableCell>
                                         {p.slip_image ? (
-                                            <Button variant="link" className="h-auto p-0 text-blue-500">ดูสลิป</Button>
+                                            <Button
+                                                variant="link"
+                                                className="h-auto p-0 text-blue-500"
+                                                onClick={() => setSelectedSlip(p.slip_image!)}
+                                            >
+                                                ดูสลิป
+                                            </Button>
                                         ) : (
                                             <span className="text-muted-foreground">-</span>
                                         )}
@@ -90,6 +97,26 @@ export function PaymentList({ initialPayments }: PaymentListProps) {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Slip View Dialog */}
+            {selectedSlip && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setSelectedSlip(null)}>
+                    <div className="relative max-w-lg w-full p-4" onClick={e => e.stopPropagation()}>
+                        <Button
+                            variant="ghost"
+                            className="absolute top-2 right-2 text-white hover:bg-white/20 rounded-full h-8 w-8 p-0"
+                            onClick={() => setSelectedSlip(null)}
+                        >
+                            <X className="h-5 w-5" />
+                        </Button>
+                        <img
+                            src={selectedSlip}
+                            alt="Payment Slip"
+                            className="w-full h-auto rounded-lg shadow-2xl bg-white"
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

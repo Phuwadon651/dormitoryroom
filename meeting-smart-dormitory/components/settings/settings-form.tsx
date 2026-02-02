@@ -63,6 +63,19 @@ export function SettingsForm({ initialSettings, currentUser }: { initialSettings
     const [qrFile, setQrFile] = useState<File | null>(null)
     const [qrPreview, setQrPreview] = useState<string | null>(null)
 
+    // Helper to fix localhost URLs for mobile testing
+    const getImageUrl = (url: string) => {
+        if (!url) return ''
+        if (typeof window === 'undefined') return url // SSR
+
+        // If URL is localhost/127.0.0.1, try to replace with current hostname
+        if (url.includes('localhost') || url.includes('127.0.0.1')) {
+            const currentHost = window.location.hostname
+            return url.replace('localhost', currentHost).replace('127.0.0.1', currentHost)
+        }
+        return url
+    }
+
     // Strict Manager check for Payment Info
     const isManager = currentUser?.role === 'Manager'
 
@@ -499,7 +512,7 @@ export function SettingsForm({ initialSettings, currentUser }: { initialSettings
                                         <div className="relative group w-full max-w-[280px]">
                                             {qrPreview ? (
                                                 <div className="relative w-full aspect-square bg-slate-50 border-2 rounded-lg overflow-hidden">
-                                                    <img src={qrPreview} alt="QR Preview" className="w-full h-full object-contain" />
+                                                    <img src={getImageUrl(qrPreview || '')} alt="QR Preview" className="w-full h-full object-contain" />
                                                     {isManager && (
                                                         <button
                                                             onClick={removeQrImage}
@@ -591,14 +604,15 @@ export function SettingsForm({ initialSettings, currentUser }: { initialSettings
                                 <RotateCcw className="mr-2 h-4 w-4" />
                                 คืนค่าเดิม
                             </Button>
-                            <Button variant="ghost" onClick={handleClear} type="button" className="text-red-500 hover:text-red-600 hover:bg-red-50">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                ล้างข้อมูล
+                            <Button variant="ghost" onClick={handleClear} type="button" className="text-red-500 hover:text-red-600 hover:bg-red-50 px-2 md:px-4">
+                                <Trash2 className="h-4 w-4 md:mr-2" />
+                                <span className="hidden md:inline">ล้างข้อมูล</span>
                             </Button>
                         </div>
                         <Button onClick={handlePreSave} disabled={loading} className="bg-slate-900 text-white hover:bg-slate-800">
                             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                            บันทึกการเปลี่ยนแปลง
+                            <span className="md:hidden">บันทึก</span>
+                            <span className="hidden md:inline">บันทึกการเปลี่ยนแปลง</span>
                         </Button>
                     </>
                 ) : (

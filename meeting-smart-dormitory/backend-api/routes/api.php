@@ -52,6 +52,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/invoices', [FinanceController::class, 'getInvoices']);
     
     Route::get('/payments', [FinanceController::class, 'getPayments']);
+    Route::post('/payments', [FinanceController::class, 'createPayment']);
 
     // Activities
     Route::get('/activities', [FinanceController::class, 'getActivities']);
@@ -79,7 +80,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/invoices', [FinanceController::class, 'createInvoice']);
         Route::delete('/invoices/{invoice}', [FinanceController::class, 'destroyInvoice']);
         
-        Route::post('/payments', [FinanceController::class, 'createPayment']);
         Route::put('/payments/{id}/verify', [FinanceController::class, 'verifyPayment']);
 
         Route::post('/settings', [SettingController::class, 'update']);
